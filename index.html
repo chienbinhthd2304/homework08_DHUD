@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Homework08</title>
+        <script> src="jquery.min.js"</script>
+        <script>
+            document.addEventListener("DOMContentLoaded", function(){
+                var v = document.getElementById("vid");
+                var canvas = document.getElementById("can");
+                var context = canvas.getContext("2d");
+                
+                v.addEventListener('play', function(){
+                    draw(this,context);
+                },false);
+            },false);
+
+            function draw(v,c){
+                if(v.paused || v.ended) return false;
+                c.drawImage(v,0,0);
+                //c.drawImage(v,0,v.offsetHeight);
+                //setTimeout(draw,20,v,c);
+                var wid = v.offsetWidth;
+                var hei = v.offsetHeight;
+                var sizedata = wid * hei * 4;
+                var imagedata = c.getImageData(0, 0, wid, hei);
+                var data = imagedata.data;
+                var linesize = wid * 4;
+                var pos, gua_val, prewitt_x, prewitt_y;
+                for (var i = 0; i < sizedata; i += 4){
+                    var avg = (data[i] + data[i + 1] + data[i + 2])/3;
+                    //var avg = data[2] * 0.21 + data[1] * 0.72 + data[0] * 0.07;
+                    data[i] = avg;
+                    data[i + 1] = avg;
+                    data[i + 2] = avg;
+                    // let count = data[i] + data[i + 1] + data[i + 2];
+                    // let colour = 0;
+                    // if (count > 510) colour = 255;
+                    // else if (count > 255) colour = 127.5;
+                    // data[i] = colour;
+                    // data[i + 1] = colour;
+                    // data[i + 2] = colour;
+                    // data[i + 3] = 255;
+                }
+                
+                for (var j = 1; j < hei - 1; j++){
+                    for (var i = 1; i < wid - 1; i++){
+                        pos = (j * wid + i) * 4;
+                        gua_val = (data[pos - linesize - 4] + data[pos - linesize + 4] + data[pos + linesize - 4] + data[pos + linesize + 4] 
+                                + (data[pos - linesize] + data[pos - 4] + data[pos + 4] + data[pos + linesize]) * 2 + data[pos] * 4) / 16;
+                        data[pos] = gua_val;
+                        data[pos + 1] = gua_val;
+                        data[pos + 2] = gua_val;
+                    }
+                }
+                for (var j = 1; j < hei - 1; j++){
+                    for (var i = 1; i < wid - 1; i++){
+                        pos = (j * wid + i) * 4;
+                        prewitt_x = (-(data[pos - linesize - 4] + data[pos + linesize - 4] + data[pos - 4]) 
+                                + (data[pos - linesize + 4] + data[pos + 4] + data[pos + linesize + 4]));
+                        prewitt_y = (-(data[pos + linesize - 4] + data[pos + linesize + 4] + data[pos + linesize]) 
+                                + (data[pos - linesize - 4] + data[pos - linesize + 4] + data[pos - linesize]))/3;
+                        var prewitt = Math.sqrt(Math.pow(prewitt_x, 2) + Math.pow(prewitt_y, 2));
+                        //var laplace = data[pos - linesize] + data[pos - 4] + data[pos + 4] + data[pos + linesize] - 4 * data[pos]
+                        data[pos] = Math.abs(prewitt_x);
+                        data[pos + 1] = Math.abs(prewitt_x);
+                        data[pos + 2] = Math.abs(prewitt_x);
+                        data[pos + 3] = 255;
+                    }
+                }
+                
+                c.putImageData(imagedata, 0, 0);
+                setTimeout(draw,20,v,c);
+            }
+        </script>
+    </head>
+<body>
+    <canvas id="can" width="640" height="360"></canvas>
+    <video id="vid" controls>
+        <source src="larva.mp4" type="video/mp4">
+        <!--
+        <source src="meme.mp4" type="video/mp4">
+        <source src="meme.webm" type="video/webm">
+        <source src="meme.ogg" type="video/ogg">
+        -->
+        Your browser does not support the video tag.
+    </video>
+</body>
+</html>
